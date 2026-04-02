@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -7,35 +8,53 @@ import Navbar from "./components/navbar";
 import Footer from "./components/footer";
 
 function App() {
-  const token = localStorage.getItem("token"); // check if user is logged in
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check token on mount
+    const checkAuth = () => {
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
+      setLoading(false);
+    };
+    
+    checkAuth();
+    
+    // Listen for storage changes (in case token is set/removed)
+    window.addEventListener("storage", checkAuth);
+    
+    return () => window.removeEventListener("storage", checkAuth);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
-
+      <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
       <div className="flex-grow">
         <Routes>
-          {/* Landing page accessible to everyone */}
           <Route path="/" element={<Landing />} />
-
-          {/* Auth routes */}
-          <Route
-            path="/login"
-            element={token ? <Navigate to="/dashboard" /> : <Login />}
+          <Route 
+            path="/login" 
+            element={isLoggedIn ? <Navigate to="/dashboard" /> : <Login setIsLoggedIn={setIsLoggedIn} />} 
           />
-          <Route
-            path="/signup"
-            element={token ? <Navigate to="/dashboard" /> : <Signup />}
+          <Route 
+            path="/signup" 
+            element={isLoggedIn ? <Navigate to="/dashboard" /> : <Signup />} 
           />
-
-          {/* Protected route */}
-          <Route
-            path="/dashboard"
-            element={token ? <Dashboard /> : <Navigate to="/login" />}
+          <Route 
+            path="/dashboard" 
+            element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" />} 
           />
         </Routes>
       </div>
-
       <Footer />
     </div>
   );
