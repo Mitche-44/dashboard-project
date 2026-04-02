@@ -3,6 +3,7 @@ from flask_cors import CORS
 from config import Config
 from extensions import db, bcrypt, jwt
 from flask_migrate import Migrate
+import os
 
 def create_app():
     app = Flask(__name__)
@@ -13,13 +14,16 @@ def create_app():
     
     migrate = Migrate(app, db)
 
-    # Configure CORS properly - Allow PATCH method
+    # Configure CORS for production - allow your Render frontend URL
+    # Get allowed origins from environment variable or use defaults for development
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    
     CORS(
         app,
-        origins=["http://localhost:5173"],
+        origins=allowed_origins,
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
-        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  # PATCH is here
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         expose_headers=["Content-Type", "Authorization"]
     )
 
@@ -35,7 +39,11 @@ def create_app():
 
     return app
 
+# Create the app instance for Gunicorn
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Get port from environment variable (Render sets this automatically)
+    port = int(os.environ.get("PORT", 5000))
+    # Bind to 0.0.0.0 to accept all incoming connections
+    app.run(host="0.0.0.0", port=port, debug=False)
