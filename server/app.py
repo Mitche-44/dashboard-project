@@ -7,13 +7,20 @@ from flask_migrate import Migrate
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    
+    # Disable strict slashes globally
+    app.url_map.strict_slashes = False
+    
     migrate = Migrate(app, db)
 
-    # Enable CORS properly for your frontend origin
+    # Configure CORS properly - Allow PATCH method
     CORS(
         app,
-        supports_credentials=True,  # allow cookies/auth headers
-        resources={r"/*": {"origins": "http://localhost:5173"}}  # your frontend
+        origins=["http://localhost:5173"],
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  # PATCH is here
+        expose_headers=["Content-Type", "Authorization"]
     )
 
     db.init_app(app)
