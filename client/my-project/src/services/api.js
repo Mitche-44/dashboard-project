@@ -17,7 +17,7 @@ API.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log(`📤 ${config.method.toUpperCase()} ${config.url}`, config.data);
+    console.log(` ${config.method.toUpperCase()} ${config.url}`, config.data);
     return config;
   },
   (error) => {
@@ -28,11 +28,11 @@ API.interceptors.request.use(
 // Handle responses
 API.interceptors.response.use(
   (response) => {
-    console.log(`📥 ${response.status} ${response.config.url}`, response.data);
+    console.log(`${response.status} ${response.config.url}`, response.data);
     return response;
   },
   (error) => {
-    console.error(`❌ Error ${error.response?.status}:`, error.response?.data);
+    console.error(` Error ${error.response?.status}:`, error.response?.data);
     return Promise.reject(error);
   }
 );
