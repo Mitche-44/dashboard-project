@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
 from extensions import db, bcrypt, jwt
@@ -12,10 +12,15 @@ def create_app():
     # Disable strict slashes globally
     app.url_map.strict_slashes = False
     
+    # Initialize extensions
+    db.init_app(app)
+    bcrypt.init_app(app)
+    jwt.init_app(app)
+    
+    # Setup migrations
     migrate = Migrate(app, db)
 
-    # Configure CORS for production - allow your Render frontend URL
-    # Get allowed origins from environment variable or use defaults for development
+    # Configure CORS for production
     allowed_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
     
     CORS(
@@ -27,15 +32,21 @@ def create_app():
         expose_headers=["Content-Type", "Authorization"]
     )
 
-    db.init_app(app)
-    bcrypt.init_app(app)
-    jwt.init_app(app)
-
+    # Register blueprints
     from routes.auth import auth_bp
     from routes.tasks import task_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(task_bp, url_prefix="/tasks")
+
+    # Add a simple home route for health checks
+    @app.route("/")
+    def home():
+        return jsonify({"message": "TaskMaster Pro API is running"}), 200
+
+    @app.route("/health")
+    def health():
+        return jsonify({"status": "healthy"}), 200
 
     return app
 
@@ -43,7 +54,5 @@ def create_app():
 app = create_app()
 
 if __name__ == "__main__":
-    # Get port from environment variable (Render sets this automatically)
     port = int(os.environ.get("PORT", 5000))
-    # Bind to 0.0.0.0 to accept all incoming connections
     app.run(host="0.0.0.0", port=port, debug=False)
