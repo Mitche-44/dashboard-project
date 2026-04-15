@@ -24,45 +24,51 @@ export default function Login({ setIsLoggedIn }) {
     // Start loading
     setLoading(true);
     
+    // Set timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        setError("Request timed out. Please try again.");
+      }
+    }, 10000);
+    
     try {
-      console.log("Attempting login with:", { email });
-      
       const res = await login({ email, password });
-      console.log("Login response:", res);
-      console.log("Response data:", res.data);
+      
+      clearTimeout(timeoutId);
       
       // Check if token exists in response
       if (res.data && res.data.token) {
         // Save token to localStorage
         localStorage.setItem("token", res.data.token);
-        console.log("Token saved successfully");
-        
-        // Verify token was saved
-        const savedToken = localStorage.getItem("token");
-        console.log("Saved token:", savedToken);
         
         // Update parent component state
         setIsLoggedIn(true);
         
         // Redirect to dashboard
-        console.log("Redirecting to /dashboard...");
         navigate("/dashboard");
       } else {
         setError("No token received from server");
-        console.error("Response missing token:", res.data);
       }
       
     } catch (err) {
-      console.error("Login error:", err);
+      clearTimeout(timeoutId);
       
-      // Handle different error types
-      if (err.response) {
+      // Handle different error types with user-friendly messages
+      if (err.code === "ECONNABORTED") {
+        setError("Connection timeout. Please try again.");
+      } else if (err.response) {
         // Server responded with error status
-        console.error("Error response:", err.response.data);
-        setError(err.response.data?.message || err.response.data?.error || "Login failed");
+        if (err.response.status === 401) {
+          setError("Invalid email or password");
+        } else if (err.response.status === 500) {
+          setError("Server error. Please try again later.");
+        } else {
+          setError(err.response.data?.message || err.response.data?.error || "Login failed");
+        }
       } else if (err.request) {
         // Request was made but no response
-        setError("Cannot connect to server. Is the backend running?");
+        setError("Cannot connect to server. Please check your connection.");
       } else {
         // Something else happened
         setError("Login failed. Please try again.");
@@ -107,11 +113,21 @@ export default function Login({ setIsLoggedIn }) {
           <button
             type="submit"
             disabled={loading}
-            className={`bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 w-full rounded-lg transition-all ${
+            className={`bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 w-full rounded-lg transition-all flex items-center justify-center gap-2 ${
               loading ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging in...
+              </>
+            ) : (
+              "Login"
+            )}
           </button>
         </form>
 

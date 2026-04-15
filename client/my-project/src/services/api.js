@@ -8,6 +8,7 @@ const API = axios.create({
     "Content-Type": "application/json",
     "Accept": "application/json",
   },
+  timeout: 10000,
 });
 
 // Add token to requests
@@ -17,24 +18,15 @@ API.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log(` ${config.method.toUpperCase()} ${config.url}`, config.data);
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Handle responses
+// Silent response handler - no logs
 API.interceptors.response.use(
-  (response) => {
-    console.log(`${response.status} ${response.config.url}`, response.data);
-    return response;
-  },
-  (error) => {
-    console.error(` Error ${error.response?.status}:`, error.response?.data);
-    return Promise.reject(error);
-  }
+  (response) => response,
+  (error) => Promise.reject(error)
 );
 
 // Auth endpoints
